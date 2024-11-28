@@ -1,0 +1,32 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      java: corretto8
+      docker: 18
+  pre_build:
+    commands:
+      - echo "Pre_build"
+      - echo "Logging in to Amazon ECR"
+      - $(aws ecr get-login  --no-include-email --region us-east-2)
+  build:
+    commands:
+      - echo "Build"
+      - echo "Entered build phase"
+      - echo "Building Java application"
+      - cd  book-service
+      - mvn clean package
+      - docker build -t ij026-service-registry:latest .
+      - docker tag ij026-service-registry:latest 941516478045.dkr.ecr.us-east-2.amazonaws.com/ij026-service-registry:booksapp
+
+  post_build:
+    commands:
+      - echo "Post_build"
+      - docker push 941516478045.dkr.ecr.us-east-2.amazonaws.com/ij026-service-registry:booksapp
+      - printf '[{"name":"booksapp-container","imageUri":"%s"}]' 941516478045.dkr.ecr.us-east-2.amazonaws.com/ij026-service-registry:booksapp > taskdefinition.json
+      - cat taskdefinition.json
+
+artifacts:
+  files:
+      - book-service/taskdefinition.json
